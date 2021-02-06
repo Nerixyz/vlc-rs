@@ -1,0 +1,17 @@
+[package]
+name = "libvlc-sys"
+version = "0.1.0"
+authors = ["Nerixyz <nerixdev@outlook.de>"]
+edition = "2018"
+
+
+[lib]
+name = "libvlc_sys"
+crate-type = ["rlib"]
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+bindgen = "0.56"
+pkg-config = "0.3"
