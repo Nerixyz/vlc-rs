@@ -5,29 +5,28 @@
 use std::ptr;
 use std::borrow::Cow;
 use std::marker::PhantomData;
-use std::ffi::{CString, CStr};
+use std::ffi::{CString};
 use std::i32;
-use libc::{c_void, c_char, c_int};
-use crate::sys;
+use libc::{c_char, c_void, c_int};
 use crate::tools::{to_cstr, from_cstr, from_cstr_ref};
 use crate::enums::*;
 
 /// Retrieve libvlc version.
 pub fn version() -> String {
     unsafe{
-        from_cstr_ref(sys::libvlc_get_version()).unwrap().into_owned()
+        from_cstr_ref(libvlc_sys::libvlc_get_version()).unwrap().into_owned()
     }
 }
 
 /// Retrieve libvlc compiler version.
 pub fn compiler() -> String {
     unsafe{
-        from_cstr_ref(sys::libvlc_get_compiler()).unwrap().into_owned()
+        from_cstr_ref(libvlc_sys::libvlc_get_compiler()).unwrap().into_owned()
     }
 }
 
 pub struct Instance {
-    pub(crate) ptr: *mut sys::libvlc_instance_t,
+    pub(crate) ptr: *mut libvlc_sys::libvlc_instance_t,
 
 }
 
@@ -51,9 +50,9 @@ impl Instance {
 
         unsafe{
             let p = if args_c_ptr.is_empty() {
-                sys::libvlc_new(0, ptr::null())
+                libvlc_sys::libvlc_new(0, ptr::null())
             } else {
-                sys::libvlc_new(args_c_ptr.len() as i32, args_c_ptr.as_ptr())
+                libvlc_sys::libvlc_new(args_c_ptr.len() as i32, args_c_ptr.as_ptr())
             };
 
             if p.is_null() {
@@ -74,7 +73,7 @@ impl Instance {
         let cstr = to_cstr(name);
 
         let result = unsafe{
-            sys::libvlc_add_intf(self.ptr, cstr.as_ptr())
+            libvlc_sys::libvlc_add_intf(self.ptr, cstr.as_ptr())
         };
 
         if result == 0 { Ok(()) }
@@ -85,20 +84,20 @@ impl Instance {
     /// LibVLC passes this as the user agent string when a protocol requires it.
     pub fn set_user_agent(&self, name: &str, http: &str) {
         unsafe{
-            sys::libvlc_set_user_agent(
+            libvlc_sys::libvlc_set_user_agent(
                 self.ptr, to_cstr(name).as_ptr(), to_cstr(http).as_ptr());
         }
     }
 
     /// Waits until an interface causes the instance to exit.
     pub fn wait(&self) {
-        unsafe{ sys::libvlc_wait(self.ptr) };
+        unsafe{ libvlc_sys::libvlc_wait(self.ptr) };
     }
 
     /// Sets some meta-information about the application.
     pub fn set_app_id(&self, id: &str, version: &str, icon: &str) {
         unsafe{
-            sys::libvlc_set_app_id(
+            libvlc_sys::libvlc_set_app_id(
                 self.ptr, to_cstr(id).as_ptr(), to_cstr(version).as_ptr(), to_cstr(icon).as_ptr());
         }
     }
@@ -106,7 +105,7 @@ impl Instance {
     /// Returns a list of audio filters that are available.
     pub fn audio_filter_list_get(&self) -> Option<ModuleDescriptionList> {
         unsafe{
-            let p = sys::libvlc_audio_filter_list_get(self.ptr);
+            let p = libvlc_sys::libvlc_audio_filter_list_get(self.ptr);
             if p.is_null() { None }
             else { Some(ModuleDescriptionList{ptr: p}) }
         }
@@ -115,7 +114,7 @@ impl Instance {
     /// Returns a list of video filters that are available.
     pub fn video_filter_list_get(&self) -> Option<ModuleDescriptionList> {
         unsafe{
-            let p = sys::libvlc_video_filter_list_get(self.ptr);
+            let p = libvlc_sys::libvlc_video_filter_list_get(self.ptr);
             if p.is_null() { None }
             else { Some(ModuleDescriptionList{ptr: p}) }
         }
@@ -124,7 +123,7 @@ impl Instance {
     /// Returns the VLM event manager
     pub fn vlm_event_manager<'a>(&'a self) -> EventManager<'a> {
         unsafe{
-            let p = sys::libvlc_vlm_get_event_manager(self.ptr);
+            let p = libvlc_sys::libvlc_vlm_get_event_manager(self.ptr);
             assert!(!p.is_null());
             EventManager{ptr: p, _phantomdata: ::std::marker::PhantomData}
         }
@@ -135,12 +134,12 @@ impl Instance {
         let cb: Box<Box<dyn Fn(LogLevel, Log, Cow<str>) + Send + 'static>> = Box::new(Box::new(f));
 
         unsafe{
-            sys::libvlc_log_set(self.ptr, logging_cb, Box::into_raw(cb) as *mut _);
+            libvlc_sys::libvlc_log_set(self.ptr, Some(logging_cb), Box::into_raw(cb) as *mut _);
         }
     }
 
     /// Returns raw pointer
-    pub fn raw(&self) -> *mut sys::libvlc_instance_t {
+    pub fn raw(&self) -> *mut libvlc_sys::libvlc_instance_t {
         self.ptr
     }
 }
@@ -148,41 +147,38 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         unsafe{
-            sys::libvlc_release(self.ptr);
+            libvlc_sys::libvlc_release(self.ptr);
         }
     }
 }
 
-extern "C" {
-    fn vsnprintf(s: *mut c_char, n: usize, fmt: *const c_char, arg: sys::va_list);
-}
 const BUF_SIZE: usize = 1024; // Write log message to the buffer by vsnprintf.
 unsafe extern "C" fn logging_cb(
-    data: *mut c_void, level: c_int, ctx: *const sys::libvlc_log_t, fmt: *const c_char, args: sys::va_list) {
+    data: *mut c_void, level: c_int, ctx: *const libvlc_sys::libvlc_log_t, fmt: *const c_char, args: libvlc_sys::va_list) {
 
     let f: &Box<dyn Fn(LogLevel, Log, Cow<str>) + Send + 'static> = ::std::mem::transmute(data);
     let mut buf: [c_char; BUF_SIZE] = [0; BUF_SIZE];
 
-    vsnprintf(buf.as_mut_ptr(), BUF_SIZE, fmt, args);
+    libvlc_sys::__stdio_common_vsnprintf_s(0, buf.as_mut_ptr(), BUF_SIZE as u64, BUF_SIZE as u64, fmt, ptr::null_mut(), args);
 
     f(::std::mem::transmute(level), Log{ptr: ctx}, from_cstr_ref(buf.as_ptr()).unwrap());
 }
 
 /// List of module description.
 pub struct ModuleDescriptionList {
-    ptr: *mut sys::libvlc_module_description_t,
+    ptr: *mut libvlc_sys::libvlc_module_description_t,
 }
 
 impl ModuleDescriptionList {
     /// Returns raw pointer
-    pub fn raw(&self) -> *mut sys::libvlc_module_description_t {
+    pub fn raw(&self) -> *mut libvlc_sys::libvlc_module_description_t {
         self.ptr
     }
 }
 
 impl Drop for ModuleDescriptionList {
     fn drop(&mut self) {
-        unsafe{ sys::libvlc_module_description_list_release(self.ptr) };
+        unsafe{ libvlc_sys::libvlc_module_description_list_release(self.ptr) };
     }
 }
 
@@ -196,8 +192,8 @@ impl<'a> IntoIterator for &'a ModuleDescriptionList {
 }
 
 pub struct ModuleDescriptionListIter<'a> {
-    ptr: *mut sys::libvlc_module_description_t,
-    _phantomdata: PhantomData<&'a sys::libvlc_module_description_t>,
+    ptr: *mut libvlc_sys::libvlc_module_description_t,
+    _phantomdata: PhantomData<&'a libvlc_sys::libvlc_module_description_t>,
 }
 
 /// Description of a module.
@@ -252,11 +248,11 @@ impl<'a> ModuleDescriptionRef<'a> {
 }
 
 pub fn errmsg() -> Option<String> {
-    unsafe{ from_cstr(sys::libvlc_errmsg()) }
+    unsafe{ from_cstr(libvlc_sys::libvlc_errmsg()) }
 }
 
 pub fn clearerr() {
-    unsafe{ sys::libvlc_clearerr() };
+    unsafe{ libvlc_sys::libvlc_clearerr() };
 }
 
 #[derive(Clone, Debug)]
@@ -321,8 +317,8 @@ pub enum Event {
 }
 
 pub struct EventManager<'a> {
-    pub(crate) ptr: *mut sys::libvlc_event_manager_t,
-    pub(crate) _phantomdata: ::std::marker::PhantomData<&'a sys::libvlc_event_manager_t>,
+    pub(crate) ptr: *mut libvlc_sys::libvlc_event_manager_t,
+    pub(crate) _phantomdata: ::std::marker::PhantomData<&'a libvlc_sys::libvlc_event_manager_t>,
 }
 
 impl<'a> EventManager<'a> {
@@ -334,8 +330,8 @@ impl<'a> EventManager<'a> {
             Box::new(Box::new(callback));
 
         let result = unsafe{
-            sys::libvlc_event_attach(
-                self.ptr, event_type as i32, event_manager_callback,
+            libvlc_sys::libvlc_event_attach(
+                self.ptr, event_type as i32, Some(event_manager_callback),
                 Box::into_raw(callback) as *mut c_void)
         };
 
@@ -347,25 +343,25 @@ impl<'a> EventManager<'a> {
     }
 
     /// Returns raw pointer
-    pub fn raw(&self) -> *mut sys::libvlc_event_manager_t {
+    pub fn raw(&self) -> *mut libvlc_sys::libvlc_event_manager_t {
         self.ptr
     }
 }
 
-unsafe extern "C" fn event_manager_callback(pe: *const sys::libvlc_event_t, data: *mut c_void) {
+unsafe extern "C" fn event_manager_callback(pe: *const libvlc_sys::libvlc_event_t, data: *mut c_void) {
     let f: &Box<dyn Fn(Event, VLCObject) + Send + 'static> = ::std::mem::transmute(data);
 
     f(conv_event(pe), VLCObject{ ptr: (*pe).p_obj });
 }
 
 // Convert c-style libvlc_event_t to Event
-fn conv_event(pe: *const sys::libvlc_event_t) -> Event {
-    let event_type: EventType = unsafe{ ::std::mem::transmute((*pe)._type) };
+fn conv_event(pe: *const libvlc_sys::libvlc_event_t) -> Event {
+    let event_type: EventType = unsafe{ ::std::mem::transmute((*pe).type_) };
 
     match event_type {
         EventType::MediaMetaChanged => {
             unsafe{
-                Event::MediaMetaChanged((*pe).u.media_meta_changed.meta_type)
+                Event::MediaMetaChanged((*pe).u.media_meta_changed.meta_type.into())
             }
         },
         EventType::MediaSubItemAdded => {
@@ -386,7 +382,8 @@ fn conv_event(pe: *const sys::libvlc_event_t) -> Event {
         },
         EventType::MediaStateChanged => {
             unsafe{
-                Event::MediaStateChanged((*pe).u.media_state_changed.new_state)
+                // the header file is off
+                Event::MediaStateChanged(std::mem::transmute::<i32, libvlc_sys::libvlc_state_t>((*pe).u.media_state_changed.new_state).into())
             }
         },
         EventType::MediaSubItemTreeAdded => {
@@ -565,12 +562,12 @@ impl VLCObject {
 }
 
 pub struct Log {
-    pub(crate) ptr: *const sys::libvlc_log_t
+    pub(crate) ptr: *const libvlc_sys::libvlc_log_t
 }
 
 impl Log {
     /// Returns raw pointer
-    pub fn raw(&self) -> *const sys::libvlc_log_t {
+    pub fn raw(&self) -> *const libvlc_sys::libvlc_log_t {
         self.ptr
     }
 }

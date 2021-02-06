@@ -2,10 +2,6 @@
 // This file is part of vlc-rs.
 // Licensed under the MIT license, see the LICENSE file.
 
-extern crate libc;
-
-pub mod sys;
-
 mod tools;
 mod core;
 mod media;

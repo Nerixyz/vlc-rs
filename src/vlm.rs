@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr;
 
-use crate::{Instance, sys};
+use crate::{Instance};
 use crate::tools::{from_cstr, to_cstr};
 
 pub trait Vlm {
@@ -45,9 +45,9 @@ impl Vlm for Instance {
         }
         let result = unsafe {
             if opts_c_ptr.is_empty() {
-                sys::libvlc_vlm_add_broadcast(self.ptr, name.as_ptr(), input.as_ptr(), output.as_ptr(), 0, ptr::null(), enabled, loop_broadcast)
+                libvlc_sys::libvlc_vlm_add_broadcast(self.ptr, name.as_ptr(), input.as_ptr(), output.as_ptr(), 0, ptr::null(), enabled, loop_broadcast)
             } else {
-                sys::libvlc_vlm_add_broadcast(self.ptr, name.as_ptr(), input.as_ptr(), output.as_ptr(), opts_c_ptr.len() as i32, opts_c_ptr.as_ptr(), enabled, loop_broadcast)
+                libvlc_sys::libvlc_vlm_add_broadcast(self.ptr, name.as_ptr(), input.as_ptr(), output.as_ptr(), opts_c_ptr.len() as i32, opts_c_ptr.as_ptr(), enabled, loop_broadcast)
             }
         };
         if result == 0 { Ok(()) } else { Err(()) }
@@ -69,9 +69,9 @@ impl Vlm for Instance {
         }
         let result = unsafe {
             if opts_c_ptr.is_empty() {
-                sys::libvlc_vlm_add_vod(self.ptr, name.as_ptr(), input.as_ptr(), 0, ptr::null(), enabled, mux.as_ptr())
+                libvlc_sys::libvlc_vlm_add_vod(self.ptr, name.as_ptr(), input.as_ptr(), 0, ptr::null(), enabled, mux.as_ptr())
             } else {
-                sys::libvlc_vlm_add_vod(self.ptr, name.as_ptr(), input.as_ptr(), opts_c_ptr.len() as i32, opts_c_ptr.as_ptr(), enabled, mux.as_ptr())
+                libvlc_sys::libvlc_vlm_add_vod(self.ptr, name.as_ptr(), input.as_ptr(), opts_c_ptr.len() as i32, opts_c_ptr.as_ptr(), enabled, mux.as_ptr())
             }
         };
         if result == 0 { Ok(()) } else { Err(()) }
@@ -80,7 +80,7 @@ impl Vlm for Instance {
     fn play_media(&self, name: &str) -> Result<(), ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_play_media(self.ptr, name.as_ptr())
+            libvlc_sys::libvlc_vlm_play_media(self.ptr, name.as_ptr())
         };
         if result == 0 { Ok(()) } else { Err(()) }
     }
@@ -88,7 +88,7 @@ impl Vlm for Instance {
     fn pause_media(&self, name: &str) -> Result<(), ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_pause_media(self.ptr, name.as_ptr())
+            libvlc_sys::libvlc_vlm_pause_media(self.ptr, name.as_ptr())
         };
         if result == 0 { Ok(()) } else { Err(()) }
     }
@@ -96,7 +96,7 @@ impl Vlm for Instance {
     fn stop_media(&self, name: &str) -> Result<(), ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_stop_media(self.ptr, name.as_ptr())
+            libvlc_sys::libvlc_vlm_stop_media(self.ptr, name.as_ptr())
         };
         if result == 0 { Ok(()) } else { Err(()) }
     }
@@ -104,7 +104,7 @@ impl Vlm for Instance {
     fn get_media_instance_position(&self, name: &str, instance: i32) -> Result<f32, ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_get_media_instance_position(self.ptr, name.as_ptr(), instance)
+            libvlc_sys::libvlc_vlm_get_media_instance_position(self.ptr, name.as_ptr(), instance)
         };
         if result != -1f32 { Ok(result) } else { Err(()) }
     }
@@ -112,7 +112,7 @@ impl Vlm for Instance {
     fn get_media_instance_length(&self, name: &str, instance: i32) -> Result<i32, ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_get_media_instance_length(self.ptr, name.as_ptr(), instance)
+            libvlc_sys::libvlc_vlm_get_media_instance_length(self.ptr, name.as_ptr(), instance)
         };
         if result != -1 { Ok(result) } else { Err(()) }
     }
@@ -120,7 +120,7 @@ impl Vlm for Instance {
     fn get_media_instance_time(&self, name: &str, instance: i32) -> Result<i32, ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_get_media_instance_time(self.ptr, name.as_ptr(), instance)
+            libvlc_sys::libvlc_vlm_get_media_instance_time(self.ptr, name.as_ptr(), instance)
         };
         if result != -1 { Ok(result) } else { Err(()) }
     }
@@ -128,7 +128,7 @@ impl Vlm for Instance {
     fn get_media_instance_rate(&self, name: &str, instance: i32) -> Result<i32, ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            sys::libvlc_vlm_get_media_instance_rate(self.ptr, name.as_ptr(), instance)
+            libvlc_sys::libvlc_vlm_get_media_instance_rate(self.ptr, name.as_ptr(), instance)
         };
         if result != -1 { Ok(result) } else { Err(()) }
     }
@@ -136,7 +136,7 @@ impl Vlm for Instance {
     fn show_media(&self, name: &str) -> Result<String, ()> {
         let name = to_cstr(name);
         let result = unsafe {
-            from_cstr(sys::libvlc_vlm_show_media(self.ptr, name.as_ptr()))
+            from_cstr(libvlc_sys::libvlc_vlm_show_media(self.ptr, name.as_ptr()))
         };
         if let Some(data) = result {
             Ok(data.to_string())
