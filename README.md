@@ -49,7 +49,7 @@ Other examples are in the examples directory.
 
 ### Windows
 
-1. Download the [`VideoLAN.LibVLC.Windows`](https://www.nuget.org/packages/VideoLAN.LibVLC.Windows) package from NuGet and unpack it top any location (It's just a zip archive).
+1. Download the [`VideoLAN.LibVLC.Windows`](https://www.nuget.org/packages/VideoLAN.LibVLC.Windows) package from NuGet and unpack it to any location (It's just a zip archive).
 2. Set the environment variable `LIBVLC_NUGET_DIR` to `[unpacked package]/build/[arch]` (For example `F:\LibVlc\build\x64`)
 
 ### Linux
