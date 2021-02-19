@@ -11,24 +11,36 @@ pub struct MediaLibrary {
 impl MediaLibrary {
     /// Create an new Media Library object.
     pub fn new(instance: &Instance) -> Option<MediaLibrary> {
-        unsafe{
+        unsafe {
             let p = libvlc_sys::libvlc_media_library_new(instance.ptr);
-            if p.is_null() { None }else{ Some(MediaLibrary{ptr: p}) }
+            if p.is_null() {
+                None
+            } else {
+                Some(MediaLibrary { ptr: p })
+            }
         }
     }
 
     /// Load media library.
     pub fn load(&self) -> Result<(), ()> {
-        unsafe{
-            if libvlc_sys::libvlc_media_library_load(self.ptr) == 0 { Ok(()) }else{ Err(()) }
+        unsafe {
+            if libvlc_sys::libvlc_media_library_load(self.ptr) == 0 {
+                Ok(())
+            } else {
+                Err(())
+            }
         }
     }
 
     /// Get media library subitems.
     pub fn media_list(&self) -> Option<MediaList> {
-        unsafe{
+        unsafe {
             let p = libvlc_sys::libvlc_media_library_media_list(self.ptr);
-            if p.is_null() { None }else{ Some(MediaList{ptr: p}) }
+            if p.is_null() {
+                None
+            } else {
+                Some(MediaList { ptr: p })
+            }
         }
     }
 
@@ -40,6 +52,6 @@ impl MediaLibrary {
 
 impl Drop for MediaLibrary {
     fn drop(&mut self) {
-        unsafe{ libvlc_sys::libvlc_media_library_release(self.ptr) };
+        unsafe { libvlc_sys::libvlc_media_library_release(self.ptr) };
     }
 }

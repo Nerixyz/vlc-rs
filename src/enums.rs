@@ -2,23 +2,18 @@
 // This file is part of vlc-rs.
 // Licensed under the MIT license, see the LICENSE file.
 
-
 /// Safety: Expect both enums to have the same size (repr(i32))
 macro_rules! libvlc_enum {
     ($libvlc_enum:ident,$enum_name:ident) => {
         impl From<libvlc_sys::$libvlc_enum> for $enum_name {
             fn from(other: libvlc_sys::$libvlc_enum) -> Self {
-                unsafe {
-                    std::mem::transmute(other)
-                }
+                unsafe { std::mem::transmute(other) }
             }
         }
 
         impl Into<libvlc_sys::$libvlc_enum> for $enum_name {
             fn into(self) -> libvlc_sys::$libvlc_enum {
-                unsafe {
-                    std::mem::transmute(self)
-                }
+                unsafe { std::mem::transmute(self) }
             }
         }
     };
@@ -82,9 +77,9 @@ libvlc_enum!(libvlc_state_t, State);
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum TrackType {
     Unknown = -1,
-    Audio   = 0,
-    Video   = 1,
-    Text    = 2
+    Audio = 0,
+    Video = 1,
+    Text = 2,
 }
 
 libvlc_enum!(libvlc_track_type_t, TrackType);
@@ -114,7 +109,7 @@ pub enum VideoAdjustOption {
     Brightness,
     Hue,
     Saturation,
-    Gamma
+    Gamma,
 }
 
 // #[repr(C)]
@@ -185,5 +180,5 @@ pub enum EventType {
     VlmMediaInstanceStatusPlaying,
     VlmMediaInstanceStatusPause,
     VlmMediaInstanceStatusEnd,
-    VlmMediaInstanceStatusError
+    VlmMediaInstanceStatusError,
 }
