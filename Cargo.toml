@@ -17,3 +17,6 @@ crate-type = ["rlib"]
 [dependencies]
 libvlc-sys = { path = "libvlc-sys" }
 libc = "0.2.85"
+
+[target.'cfg(windows)'.dependencies]
+printf-compat = {version = "0.1"}
